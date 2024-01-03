@@ -16,10 +16,10 @@ Install:
 ```$ mysql -h 127.0.0.1 -u root -p```
 #input password: "RootPasswd"
 #run into MySql command line:
-```> create database dayz_old;
-> GRANT ALL PRIVILEGES ON dayz_old.* TO 'user'@'%' IDENTIFIED BY 'passwd';```
+```> create database dayz_old;```
+```> GRANT ALL PRIVILEGES ON dayz_old.* TO 'user'@'%' IDENTIFIED BY 'passwd';```
 3. Init database:
-```$ cd docker/old_server 
-$ ./reload_db.sh```
+```$ cd docker/old_server```
+```$ ./reload_db.sh```
 4. Build server:
 ```$ ./rebuild.sh```
