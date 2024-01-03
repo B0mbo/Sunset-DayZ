@@ -1,0 +1,38 @@
+version: "3.7"
+volumes:
+  mysql-data:
+    driver: local
+  mysql-log:
+    driver: local
+  mysql-conf:
+    driver: local
+
+services:
+
+  old_server:
+    restart: unless-stopped
+    build:
+        context: ./old_server
+    ports:
+      - 7780:7780/udp
+    environment:
+        SAMP_OLD: "samp037svr_R3.tar.gz"
+    volumes:
+      - ./old_server/imessage:/server/samp03/imessage
+
+  mariadb:
+    restart: unless-stopped
+    image: mariadb:10
+    ports:
+      - 127.0.0.1:3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: RootPasswd
+      MYSQL_DATABASE: vpnadmin
+      MYSQL_USER: vpnadmin_user
+      MYSQL_PASSWORD: vpnadmin_pass
+    volumes:
+      - ./databases/mariadb:/var/lib/mysql
+      - ./logs/mysql/mysql.log:/var/log/mysql/mysql.log
+      - ./logs/mysql/mysql_slow.log:/var/log/mysql/mysql_slow.log
+      - ./logs/mysql/mysql_error.log:/var/log/mysql/mysql_error.log
+      - ./mysql/conf/app.cnf:/etc/mysql/conf.d/app.cnf

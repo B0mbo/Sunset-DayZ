@@ -1,0 +1,2 @@
+[BAD_WORDS]
+fuck=nice
