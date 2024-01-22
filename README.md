@@ -1,3 +1,5 @@
+Sunset DayZ v0.6.3
+
 MySQL root password: ```RootPasswd```<br />
 
 Database name: ```dayz_old```<br />
