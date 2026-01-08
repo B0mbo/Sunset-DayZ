@@ -162,7 +162,7 @@ native cache_get_query_string(destination[], max_len = sizeof(destination));
 
 
 // Forward declarations
-forward OnQueryError(errorid, error[], callback[], query[], connectionHandle);
+forward OnQueryError(errorid, const error[], const callback[], const query[], connectionHandle);
 
 
 #if defined MYSQL_USE_YINLINE || defined E_CALLBACK_DATA

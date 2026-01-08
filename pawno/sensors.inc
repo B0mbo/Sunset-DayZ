@@ -4,8 +4,8 @@
 
 #define _SENSORS_INC_
 
-#include<a_samp>
-#include<FCNPC>
+#include<open.mp>
+#include<omp_npc>
 #include"global.inc"
 #include"load_objects.inc"
 
@@ -65,11 +65,13 @@ forward hide_smoke_statistic(playerid);
 forward show_statistic_data(playerid);
 forward hide_statistic_data(playerid);
 forward update_statistic_data(playerid, bool:update);
-forward update_sensor_messager_cheat(msg[]);
-forward update_sensor_messager_player(playerid, msg[], text[], color1, color2);
+forward update_sensor_messager_cheat(const msg[], numb);
+forward update_sensor_messager_player(playerid, const msg[], const text[], color1, color2);
 forward update_sensor_messager_player_l(msg[], color, Float:len);
-forward Float:get_textdraw_length(msg[]);
-forward Float:get_dialog_length(msg[]);
+forward Float:get_textdraw_length(const msg[]);
+forward Float:get_dialog_length(const msg[]);
+
+forward play_dolg_sound();
 
 forward create_server_time();
 forward update_server_time();
@@ -78,7 +80,7 @@ forward play_dolg_sound();
 
 forward destroy_smokescreen();
 forward destroy_statistic_data(playerid);
-forward IsPlayerSpawned(playerid);
+forward IsPlayerAlreadySpawned(playerid);
 
 forward create_spawn_shadow(); //создать пелену
 forward shadow_spawn(playerid); //закрыть кнопку "spawn"
@@ -104,8 +106,10 @@ public update_character_state()
 
 		if(IsPlayerNPC(i))
 		{
-		    if(!FCNPC_IsSpawned(i) || FCNPC_IsDead(i))
+#if defined _INC_omp_npc
+		    if(!NPC_IsSpawned(i) || NPC_IsDead(i))
 			    continue;
+#endif
 		}
 		else
 		{
@@ -113,7 +117,7 @@ public update_character_state()
 			    continue;
 		}
 
-		if(!IsPlayerSpawned(i))
+		if(!IsPlayerAlreadySpawned(i))
 	        continue;
 
 		if(gHealth[i] <= 0)
@@ -151,8 +155,10 @@ public update_live_sensors()
 
 		if(is_npc)
 		{
-		    if(!FCNPC_IsSpawned(i) || FCNPC_IsDead(i))
+#if defined _INC_omp_npc
+		    if(NPC_IsDead(i) || !NPC_IsSpawned(i))
 			    continue;
+#endif
 		}
 		else
 		{
@@ -184,7 +190,7 @@ public update_live_sensors()
 			}
 		}
 
-		if(!IsPlayerSpawned(i))
+		if(!IsPlayerAlreadySpawned(i))
 		{
 			update_sensor_time(i);
 			if(!gAFK[i])
@@ -284,7 +290,7 @@ public update_live_sensors()
 		//если персонаж бежит - увеличиваем температуру
 		if(is_npc)
 		{
-//			if(FCNPC_IsMoving(i))
+//			if(NPC_IsMoving(i))
 //			{
 //				gTemperature[i] = gTemperature[i] + 1;
 //			}
@@ -423,29 +429,29 @@ public update_zombie_attack()
 	
 	for(i = 0; i < MAX_PLAYERS; ++i)
 	{
-	    if(IsPlayerNPC(i) && FCNPC_IsSpawned(i) && !FCNPC_IsDead(i))
+	    if(IsPlayerNPC(i) && NPC_IsSpawned(i) && !NPC_IsDead(i))
 	    {
-	    	FCNPC_GetPosition(i, x, y, z);
+	    	NPC_GetPos(i, x, y, z);
 			for(j = 0; j < MAX_PLAYERS; ++j)
 			{
-			    if(!IsPlayerSpawned(j) || IsPlayerNPC(j)/* || gAdminLevel[j] > 9*/)
+			    if(!IsPlayerAlreadySpawned(j) || IsPlayerNPC(j)/* || gAdminLevel[j] > 9*/)
 			        continue;
 		        GetPlayerPos(j, player_x, player_y, player_z);
 			    if(!IsPlayerNPC(j) && IsPlayerInRangeOfPoint(j, 1.2, x, y, z))
 			    {
-			        if(FCNPC_IsMoving(i))
-			        	FCNPC_Stop(i);
-			    	FCNPC_AimAt(i, player_x, player_y, player_z, false);
-			    	FCNPC_MeleeAttack(i, 50);
+			        if(NPC_IsMoving(i))
+			        	NPC_StopMove(i);
+			    	NPC_AimAt(i, player_x, player_y, player_z, false);
+			    	NPC_MeleeAttack(i, 50);
 			        break;
 			    }
 			    if(!IsPlayerNPC(j) && IsPlayerInRangeOfPoint(j, 99, x, y, z))
 			    {
 			        for(k = 0, count = 0; k < i; ++k)
 			        {
-			            if(IsPlayerNPC(k) && !FCNPC_IsDead(k) && FCNPC_IsSpawned(k) && k != i)
+			            if(IsPlayerNPC(k) && !NPC_IsDead(k) && NPC_IsSpawned(k) && k != i)
 						{
-							FCNPC_GetPosition(k, zomb_x, zomb_y, zomb_z);
+							NPC_GetPos(k, zomb_x, zomb_y, zomb_z);
 						 	if(VectorSize(player_x-zomb_x,player_y-zomb_y,0) < 20)
 			                	count++;
 						}
@@ -455,25 +461,25 @@ public update_zombie_attack()
 						if(count >= 5)
 						    break;
 			        }
-			        if(FCNPC_IsAiming(i))
+			        if(NPC_IsAiming(i))
 			        {
-			            FCNPC_StopAttack(i);
-			        	FCNPC_StopAim(i);
+			            NPC_StopMeleeAttack(i);
+			        	NPC_StopAim(i);
 					}
 					dx = x - player_x;
 					dy = y - player_y;
 					len = VectorSize(dx,dy,0);
 			        if(count >= 5)
-					FCNPC_GoTo(i, player_x+20.0*dx/len, player_y+30.0*dy/len, player_z, FCNPC_MOVE_TYPE_RUN, 2.0, true);
+					NPC_Move(i, player_x+20.0*dx/len, player_y+30.0*dy/len, player_z, NPC_MOVE_TYPE_SPRINT, 2.0, true);
     	   			else
-					FCNPC_GoTo(i, player_x+0.5*dx/len, player_y+0.5*dy/len, player_z, FCNPC_MOVE_TYPE_RUN, 2.0, true);
+					NPC_Move(i, player_x+0.5*dx/len, player_y+0.5*dy/len, player_z, NPC_MOVE_TYPE_SPRINT, 2.0, true);
 			        break;
 			    }
 			}
-			if(FCNPC_IsAiming(i))
+			if(NPC_IsAiming(i))
 			{
-				FCNPC_StopAttack(i);
-				FCNPC_StopAim(i);
+				NPC_StopMeleeAttack(i);
+				NPC_StopAim(i);
 			}
 	    }
 	}
@@ -553,11 +559,11 @@ public cheater_finder()
 	 	GetPlayerName(playerid, name, sizeof(name));
 		if(gAdminLevel[playerid] > 9 || strcmp(name, "Kenny", true, 5) == 0)
 		{
-			format(msg, sizeof(msg), "gAFK=%d, weapid=%d, gCheatersList=%d, CheterLevel=%d, admin=%d, level=%d, ID=%d, noncheat=%f, spawned=%d", gAFK[playerid], GetPlayerWeapon(playerid), gCheatersList[playerid], gPlayerCheaterLevel[playerid], IsPlayerAdmin(playerid), gAdminLevel[playerid], gPlayersID[playerid], gNonCheaters[playerid][2], IsPlayerSpawned(playerid));
+			format(msg, sizeof(msg), "gAFK=%d, weapid=%d, gCheatersList=%d, CheterLevel=%d, admin=%d, level=%d, ID=%d, noncheat=%f, spawned=%d", gAFK[playerid], GetPlayerWeapon(playerid), gCheatersList[playerid], gPlayerCheaterLevel[playerid], IsPlayerAdmin(playerid), gAdminLevel[playerid], gPlayersID[playerid], gNonCheaters[playerid][2], IsPlayerAlreadySpawned(playerid));
 			SendClientMessage(playerid, 0xFF00FFFF, msg);
 		}
 */
-		if(IsPlayerAdmin(playerid) || (gAdminLevel[playerid] > 2) || (gPlayersID[playerid] <= 0) || (gNonCheaters[playerid][2] == 484.0) || !IsPlayerSpawned(playerid))
+		if(IsPlayerAdmin(playerid) || (gAdminLevel[playerid] > 2) || (gPlayersID[playerid] <= 0) || (gNonCheaters[playerid][2] == 484.0) || !IsPlayerAlreadySpawned(playerid))
 		    continue;
 
 		if(gCheatersList[playerid] == (playerid+MAX_PLAYERS))
@@ -2692,7 +2698,7 @@ public update_sensor_health(playerid, health)
 //	SetPlayerHealth(playerid, floatmul(1000.0,(floatdiv(float(health), float(START_HEALTH_VALUE)))));
 	buff = health*100/START_HEALTH_VALUE;
 	if(IsPlayerNPC(playerid))
-		FCNPC_SetHealth(playerid, buff>8?buff:8);
+		NPC_SetHealth(playerid, buff>8?buff:8);
 	else
 		SetPlayerHealth(playerid, buff>8?buff:8);
 	
@@ -2852,7 +2858,7 @@ public update_sensor_time(playerid)
 	format(gYourTime[playerid], 15, "%02d:%02d:%02d", hour, minut, second);
 }
 
-public update_sensor_messager_cheat(msg[])
+public update_sensor_messager_cheat(const msg[])
 {
 	format(gMessagerString0, sizeof(gMessagerString0), "%s", msg);
 //	SendClientMessageToAll(0xFF00FF00, gMessagerString0);
@@ -2883,7 +2889,7 @@ public update_sensor_messager_cheat(msg[])
 	TextDrawShowForAll(gMessagerTD[0][0]);
 }
 
-public update_sensor_messager_player(playerid, msg[], text[], color1, color2)
+public update_sensor_messager_player(playerid, const msg[], const text[], color1, color2)
 {
 	new i, j;
 	new name[64];
@@ -3039,7 +3045,7 @@ public update_sensor_messager_player_l(msg[], color, Float:len)
 	}
 }
 
-public Float:get_textdraw_length(msg[])
+public Float:get_textdraw_length(const msg[])
 {
 	new i, len;
 	new Float:length;
@@ -3154,7 +3160,7 @@ public Float:get_textdraw_length(msg[])
 	return length;
 }
 
-public Float:get_dialog_length(msg[])
+public Float:get_dialog_length(const msg[])
 {
 	new i, len;
 	new Float:length;
@@ -3769,7 +3775,7 @@ public update_server_time()
 
 	for(new i = 0; i < MAX_PLAYERS; ++i)
 	{
-		if(gAntiRadar[i] >= 0 && IsPlayerSpawned(i) && !IsPlayerNPC(i))
+		if(gAntiRadar[i] >= 0 && IsPlayerAlreadySpawned(i) && !IsPlayerNPC(i))
 		{
 			if(gTdAntiCountDown[i] != PlayerText:INVALID_TEXT_DRAW)
 			{
@@ -3827,12 +3833,12 @@ public destroy_statistic_data(playerid)
 	}
 }
 
-stock IsPlayerSpawned(playerid)
+stock IsPlayerAlreadySpawned(playerid)
 {
     new player_state;
 
    	if(IsPlayerNPC(playerid))
-		return FCNPC_IsSpawned(playerid);
+		return NPC_IsSpawned(playerid);
 		
 	player_state = GetPlayerState(playerid);
 
@@ -3923,7 +3929,7 @@ public IsPlayerInWater(playerid)
 		new Float:pnX,Float:pnY,Float:pnZ;
 
 		if(IsPlayerNPC(playerid))
-			FCNPC_GetPosition(playerid,pnX,pnY,pnZ);
+			NPC_GetPos(playerid,pnX,pnY,pnZ);
 		else
 			GetPlayerPos(playerid,pnX,pnY,pnZ);
 

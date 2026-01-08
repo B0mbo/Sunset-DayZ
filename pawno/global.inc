@@ -1,4 +1,4 @@
-#if defined _GLABAL_INC_
+#if defined _GLOBAL_INC_
 	#endinput
 #endif
 

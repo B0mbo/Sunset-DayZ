@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if defined _streamer_included
+    #endinput
+#endif
+#define _streamer_included
 
 #include <a_samp>
 

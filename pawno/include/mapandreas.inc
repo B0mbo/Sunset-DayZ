@@ -1,3 +1,8 @@
+#if defined _include_map_
+	#endinput
+#endif
+#define _include_map_
+
 #define MAP_ANDREAS_MODE_NONE			0
 #define MAP_ANDREAS_MODE_MINIMAL		1 // for future use
 #define MAP_ANDREAS_MODE_FULL			2

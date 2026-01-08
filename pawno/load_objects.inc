@@ -8,7 +8,7 @@
 
 #define LOAD_DEBUG
 
-#include<a_samp>
+#include<open.mp>
 #include<things>
 #include<a_mysql>
 #include<mapandreas>
@@ -7295,7 +7295,7 @@ public load_player_position(playerid)
 	}
 	else
 	{
-	    FCNPC_Spawn(playerid, skin, x, y, z);
+	    NPC_Spawn(playerid, skin, x, y, z);
 	}
 	//необходимо обнулить счётчик читов, чтобы не выкинуло при следующем входе в игру!
     mysql_format(gMysql, request, sizeof(request), "UPDATE characters SET cheater=0 WHERE player_id=%d LIMIT 1", gPlayersID[playerid]);
@@ -7336,7 +7336,7 @@ public init_npc_zombies()
 		{
 	        strdel(name, 0, sizeof(name)-1);
 			cache_get_field_content(i, "name", name, gMysql);
-			npcid = FCNPC_Create(name);
+			npcid = NPC_Create(name);
 			if(npcid >= 0 && npcid < MAX_PLAYERS)
 				load_player_position(npcid);
 		    cache_set_active(result, gMysql);
@@ -9219,7 +9219,7 @@ public kill_character(playerid)
 	}
 	else
 	{
-	    if(!FCNPC_IsDead(playerid))
-			FCNPC_Kill(playerid);
+	    if(!NPC_IsDead(playerid))
+			NPC_Kill(playerid);
 	}
 }

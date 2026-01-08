@@ -13,11 +13,11 @@
 //"uk-es","de-uk","uk-de","tr-uk","uk-tr","cs-uk","uk-cs","bg-uk","uk-bg","ro-uk","uk-ro","sr-uk","uk-sr"
 
 #include <crashdetect>
-#include <a_samp>
+#include <open.mp>
 #include <a_actor>
 #include <things>
 #include <SAMPle>
-#include <FCNPC>
+#include <omp_npc>
 #include <mapandreas>
 #include <streamer>
 
@@ -46,7 +46,7 @@ forward OnPlayerConnectEx(playerid);
 forward OnPlayerDisconnectEx(playerid, reason);
 forward OnPlayerSpawnEx(playerid);
 forward OnPlayerDeathEx(playerid, killerid, reason);
-forward OnPlayerTakeDamageEx(playerid, issuerid, Float: amount, weaponid, bodypart);
+forward OnPlayerTakeDamageEx(playerid, issuerid, Float:amount, WEAPON:weaponid, bodypart);
 forward OnPlayerTextEx(playerid, in_text[]);
 
 forward LoadPlayerPosition(playerid);
@@ -119,14 +119,18 @@ forward set_player_extra(playerid, extra[128]);
 
 forward update_car_labels(); //обновление меток авто на карте
 forward unmute_a_chat_for_player(PlayerID); //дл€ таймера сообщени€ о разблокировки чата
+
+#if defined LOGO_DAYZ_PREVIEW
+//логотип
 forward hide_dayz_logo_from_player(playerid);
+#endif
 
 forward apply_some_cell(playerid, vehid, cell, area); //выполнить некоторое действие над только что созданным объектом
 forward unapply_one_cell(playerid, cell, area); //отменить действие содержимого €чейки
 forward auto_apply_one_cell(playerid, vehid, cell, area); //автоматически использовать содержимое €чейки
 forward apply_one_cell(playerid, vehid, cell, area); //использовать содержимое €чейки
 
-#if defined _FCNPC_included
+#if defined _INC_omp_npc
 new npc_id;
 #endif
 
@@ -137,42 +141,44 @@ main()
 	print("----------------------------------\n");
 }
 
+#if defined _INC_omp_npc
 // Callbacks
-public FCNPC_OnCreate(npcid)
+public NPC_OnCreate(npcid)
 {
 	return 1;
 }
 
-public FCNPC_OnSpawn(npcid)
+public NPC_OnSpawn(npcid)
 {
 	return OnPlayerSpawnEx(npcid);
 }
-public FCNPC_OnRespawn(npcid)
+public NPC_OnRespawn(npcid)
 {
 	return 1;//OnPlayerSpawnEx(npcid);
 }
-public FCNPC_OnDeath(npcid, killerid, reason)
+public NPC_OnDeath(npcid, killerid, reason)
 {
 	return OnPlayerDeathEx(npcid, killerid, 1);
 }
 
 // Temporarily disabled until a further notice
-/*forward FCNPC_OnVehicleEntryComplete(npcid, vehicleid, seat);
-forward FCNPC_OnVehicleExitComplete(npcid);*/
+/*forward NPC_OnVehicleEntryComplete(npcid, vehicleid, seat);
+forward NPC_OnVehicleExitComplete(npcid);*/
 
-//public FCNPC_OnReachDestination(npcid);
-//public FCNPC_OnFinishPlayback(npcid);
+//public NPC_OnReachDestination(npcid);
+//public NPC_OnFinishPlayback(npcid);
 
-//public FCNPC_OnTakeDamage(npcid, damagerid, weaponid, bodypart, Float:health_loss)
-public FCNPC_OnTakeDamage(npcid, issuerid, Float:amount, weaponid, bodypart)
+public NPC_OnTakeDamage(npcid, issuerid, Float:amount, WEAPON:weaponid, bodypart)
+//public NPC_OnTakeDamage(npcid, damagerid, weaponid, bodypart, Float:health_loss)
 {
-	return OnPlayerTakeDamageEx(npcid, issuerid, Float: amount, weaponid, bodypart);
+	return OnPlayerTakeDamageEx(npcid, issuerid, Float:amount, weaponid, bodypart);
 	//return OnPlayerTakeDamageEx(npcid, damagerid, Float:health_loss, weaponid, bodypart);
 }
 
-//public FCNPC_OnFinishNodePoint(npcid, point);
-//public FCNPC_OnChangeNode(playerid, nodeid);
-//public FCNPC_OnFinishNode(npcid);
+//public NPC_OnFinishNodePoint(npcid, point);
+//public NPC_OnChangeNode(playerid, nodeid);
+//public NPC_OnFinishNode(npcid);
+#endif
 
 public OnGameModeInit()
 {
@@ -309,8 +315,8 @@ public OnGameModeInit()
 	//количество возможных нарушений перед киком
 	gMaxAnticheat = 2;
 
-	create_things("things.txt", HOST, USER, PASSWD, DBNAME);
-	init_thread_sql(HOST, USER, PASSWD, DBNAME);
+    create_things("imessage/things.txt", HOST, USER, PASSWD, DBNAME);
+    init_thread_sql(HOST, USER, PASSWD, DBNAME);
 	open_database();
 	load_objects();
 	load_vehicles();
@@ -631,15 +637,17 @@ public OnGameModeInit()
 
 	destroy_bug_objects();
 
-	FCNPC_SetUpdateRate(80);
-//	FCNPC_InitZMap("./scriptfiles/SAfull.hmap");
+#if defined _INC_omp_npc
+//    NPC_SetUpdateRate(40);
+//	NPC_InitZMap("./scriptfiles/SAfull.hmap");
 	init_npc_zombies();
+#endif
 
-	init_antimat("replace.txt");
+    init_antimat("imessage/replace.txt");
 
-	SendRconCommand("loadfs animations");
+//    SendRconCommand("loadfs animations");
 //	SendRconCommand("loadfs menu");
-	SendRconCommand("loadfs small_base");
+//    SendRconCommand("loadfs small_base");
 //	SendRconCommand("loadfs map_by_sprite4");
 //	SendRconCommand("loadfs ls_beachside");
 //	SendRconCommand("loadfs ls_apartments1");
@@ -898,7 +906,7 @@ public OnICQMessage(from[], icqmes[])
 }
 #endif
 
-public OnQueryError(errorid, error[], callback[], query[], connectionHandle)
+public OnQueryError(errorid, const error[], const callback[], const query[], connectionHandle)
 {
 	printf("MySql Error: %s, callback:%s\nquery:%s",error,callback,query);
 	switch(errorid)
@@ -1345,8 +1353,8 @@ public OnPlayerDisconnectEx(playerid, reason)
 #endif
  	
 	//обновл€ем врем€ игрока в игре
-	if(gIsPlayerLogin[playerid] > 0)
-		player_logout(playerid);
+    if(gIsPlayerLogin[playerid] > 0 && is_not_npc)
+        player_logout(playerid);
 
     gAFK[playerid] = 1;
     gAFK_update[playerid] = 1;
@@ -1678,7 +1686,7 @@ public OnPlayerSpawnEx(playerid)
 	return 1;
 }
 
-public OnPlayerDeath(playerid, killerid, reason)
+public OnPlayerDeath(playerid, killerid, WEAPON:reason)
 {
 	return OnPlayerDeathEx(playerid, killerid, reason);
 }
@@ -1732,17 +1740,20 @@ public OnPlayerDeathEx(playerid, killerid, reason)
     gPlayerDeathCount[playerid][1] = lLastTicks;
 
 	//сохран€ем координаты
-   	save_player_bakup_position(playerid);
+    if(!IsPlayerNPC(playerid)) //дл€ уменьшени€ нагрузки на Ѕƒ
+        save_player_bakup_position(playerid);
 
 	//игрок не р€дом с костром
 	gPlayersNearFire[playerid] = 0;
 
 	if(IsPlayerNPC(playerid))
 	{
-		if(FCNPC_IsDead(playerid) && gHealth[playerid] == START_HEALTH_VALUE)
-		    return 1;
-		FCNPC_GetPosition(playerid, x, y, z);
-	}
+#if defined _INC_omp_npc
+        if(NPC_IsDead(playerid) && gHealth[playerid] == START_HEALTH_VALUE)
+            return 0;
+        NPC_GetPos(playerid, x, y, z);
+#endif
+    }
 	else
 	{
 		//отключаем античит
@@ -1862,7 +1873,8 @@ public OnPlayerDeathEx(playerid, killerid, reason)
 
 public LoadPlayerPosition(playerid)
 {
-	new i, npcid;
+#if defined _INC_omp_npc
+    new i, npcid;
 	static name[MAX_NPC][64];
 	static npcids[MAX_NPC];
 
@@ -1878,8 +1890,8 @@ public LoadPlayerPosition(playerid)
 		    npcids[i] = playerid;
 		    strdel(name[i], 0, 63);
 			GetPlayerName(playerid, name[i], 64);
-			FCNPC_Destroy(playerid);
-		}
+            NPC_Destroy(playerid);
+        }
 	}
 
 	for(i = 0; i < MAX_NPC; ++i)
@@ -1887,10 +1899,10 @@ public LoadPlayerPosition(playerid)
 		if(npcids[i] > 0)
 		{
 		    if(IsPlayerConnected(npcids[i]) && IsPlayerNPC(npcids[i]))
-				FCNPC_Destroy(npcids[i]);
+				NPC_Destroy(npcids[i]);
 		    if(strlen(name[i]) > 0)
 		    {
-				npcid = FCNPC_Create(name[i]);
+				npcid = NPC_Create(name[i]);
 				if(npcid != INVALID_PLAYER_ID)
 				{
 					load_player_position(npcid);
@@ -1900,6 +1912,7 @@ public LoadPlayerPosition(playerid)
 			}
 		}
 	}
+#endif
 }
 
 public OnVehicleSpawn(vehicleid)
@@ -2018,8 +2031,8 @@ public OnPlayerShootDynamicObject(playerid, weaponid, objectid, Float:x, Float:y
 	if(gPlayerWeapon[playerid][3] > 0)
 	{
 	    GetDynamicObjectPos(objectid, fx, fy, fz);
-	    CreateExplosion(fx, fy, fz, 2, gPlayerWeapon[playerid][3]);
-	}
+        CreateExplosion(floatadd(fx,x), floatadd(fy,y), floatadd(fz,z), 2, gPlayerWeapon[playerid][3]);
+    }
 
 	//уничтожаем объект, в который попала пул€
 	full_free_object_by_ingame_id(objectid);
@@ -2458,8 +2471,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	GetPlayerName(playerid, admin_name, sizeof(admin_name));
 
 	//показать координаты поверхности
-	if(strcmp(cmdtext, "/3d", true, 3) == 0) //отладка!!!
-	{
+    if(strcmp(cmdtext, "/3d", true, 3) == 0 && strlen(cmdtext) == 3) //отладка!!!
+    {
 		static object_id[10000];
 		new Float:X, Float:Y, Float:Z;
 		new i, j, res;
@@ -2771,8 +2784,8 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	
 	if(strcmp(cmdtext, "/goto ", true, 6) == 0)
 	{
-#if defined _FCNPC_included
-		new Float:x, Float:y, Float:z;
+#if defined _INC_omp_npc
+        new Float:x, Float:y, Float:z;
 		new Float:speed;
 		new type;
 		new idx;
@@ -2784,7 +2797,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
    		tmp = strtok(cmdtext,idx); //параметр
 		speed = floatstr(tmp);
 		GetPlayerPos(playerid, x, y, z);
-		FCNPC_GoTo(npc_id, x, y, z, type, speed, true);
+        NPC_Move(npc_id, x, y, z, type, speed, true);
 #endif
 		return 1;
 	}
@@ -4170,8 +4183,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			    GetPlayerPos(playerid, x, y, z);
 			    if(IsPlayerNPC(second_id))
 			    {
-			        FCNPC_SetPosition(second_id, x+0.7, y+0.7, z);
-			    }
+#if defined _INC_omp_npc
+                    NPC_SetPos(second_id, x+0.7, y+0.7, z);
+#endif
+                }
 			    else
 			    {
 				    gCheatersList[second_id] = (second_id+MAX_PLAYERS);
@@ -4189,8 +4204,10 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			{
 			    if(IsPlayerNPC(second_id))
 			    {
-			        FCNPC_GetPosition(second_id, x, y, z);
-			    }
+#if defined _INC_omp_npc
+                    NPC_GetPos(second_id, x, y, z);
+#endif
+                }
 			    else
 			    {
 					GetPlayerPos(second_id, x, y, z);
@@ -4220,12 +4237,20 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			    if(!IsPlayerNPC(third_id))
 			    	gCheatersList[third_id] = (third_id+MAX_PLAYERS);
 			    if(IsPlayerNPC(second_id))
-			        FCNPC_GetPosition(second_id, x, y, z);
-			    else
+                {
+#if defined _INC_omp_npc
+                    NPC_GetPos(second_id, x, y, z);
+#endif
+                }
+                else
 				    GetPlayerPos(second_id, x, y, z);
 				if(IsPlayerNPC(third_id))
-				    FCNPC_SetPosition(third_id, x+0.7, y+0.7, z);
-				else
+                {
+#if defined _INC_omp_npc
+                    NPC_SetPos(third_id, x+0.7, y+0.7, z);
+#endif
+                }
+                else
 					SetPlayerPos(third_id, x+0.7, y+0.7, z);
    			}
    			return 1;
@@ -4248,8 +4273,12 @@ public OnPlayerCommandText(playerid, cmdtext[])
 			{
 			    gCheatersList[second_id] = (second_id+MAX_PLAYERS);
 			    if(IsPlayerNPC(second_id))
-			        FCNPC_SetPosition(second_id, x, y, z);
-				else
+                {
+#if defined _INC_omp_npc
+                    NPC_SetPos(second_id, x, y, z);
+#endif
+                }
+                else
 			    	SetPlayerPos(second_id, x, y, z);
    			}
 			else
@@ -4565,7 +4594,7 @@ public OnPlayerCommandText(playerid, cmdtext[])
 	return 0;
 }
 
-public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)
+public OnPlayerWeaponShot(playerid, WEAPON:weaponid, BULLET_HIT_TYPE:hittype, hitid, Float:fX, Float:fY, Float:fZ)
 {
 	new cell;
 	new name[64];
@@ -4699,12 +4728,12 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 	return 1;
 }
 
-public OnPlayerTakeDamage(playerid, issuerid, Float: amount, weaponid, bodypart)
+public OnPlayerTakeDamage(playerid, issuerid, Float:amount, WEAPON:weaponid, bodypart)
 {
-	return OnPlayerTakeDamageEx(playerid, issuerid, Float: amount, weaponid, bodypart);
+	return OnPlayerTakeDamageEx(playerid, issuerid, Float:amount, weaponid, bodypart);
 }
 
-public OnPlayerTakeDamageEx(playerid, issuerid, Float: amount, weaponid, bodypart)
+public OnPlayerTakeDamageEx(playerid, issuerid, Float:amount, WEAPON:weaponid, bodypart)
 {
 	new str_amount[16];
 	new buff;
@@ -4713,8 +4742,12 @@ public OnPlayerTakeDamageEx(playerid, issuerid, Float: amount, weaponid, bodypar
 	buff = gHealth[playerid]*100/START_HEALTH_VALUE;
 
 	if(IsPlayerNPC(playerid))
-		FCNPC_SetHealth(playerid, buff>8?buff:8);
-	else
+    {
+#if defined _INC_omp_npc
+        NPC_SetHealth(playerid, buff>8?buff:8);
+#endif
+    }
+    else
 		SetPlayerHealth(playerid, buff>8?buff:8);
 
     if(gHealth[playerid] <= 0)
@@ -5082,7 +5115,7 @@ public OnPlayerTakeDamageEx(playerid, issuerid, Float: amount, weaponid, bodypar
     return 1;
 }
 
-public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
+public OnPlayerGiveDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart)
 {
 /*
 	for(new i = 0; i < MAX_PLAYERS; ++i)
@@ -5228,7 +5261,7 @@ public OnPlayerExitVehicle(playerid, vehicleid)
 	return 1;
 }
 
-public OnPlayerStateChange(playerid, newstate, oldstate)
+public OnPlayerStateChange(playerid, PLAYER_STATE:newstate, PLAYER_STATE:oldstate)
 {
 	return 1;
 }
@@ -5309,7 +5342,7 @@ public OnPlayerInteriorChange(playerid, newinteriorid, oldinteriorid)
 	return 1;
 }
 
-public OnPlayerKeyStateChange(playerid, newkeys, oldkeys)
+public OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
 {
 	new vehicleid;
 
@@ -6382,7 +6415,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 	return 1;
 }
 
-public OnPlayerClickPlayer(playerid, clickedplayerid, source)
+public OnPlayerClickPlayer(playerid, clickedplayerid, CLICK_SOURCE:source)
 {
     new vhid, i, is_spectate;
 
