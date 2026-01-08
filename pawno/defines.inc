@@ -8,7 +8,7 @@
 #define CHATTIME
 
 //database connection data
-#define HOST "mariadb"		//host name/addr
+#define HOST "172.18.0.1"		//host name/addr
 #define USER "user"		//user name
 #define PASSWD "passwd"		//user password
 #define DBNAME "dayz_old"	//database name
