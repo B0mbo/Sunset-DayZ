@@ -12,4 +12,3 @@ docker system prune -f
 
 docker-compose ps
 
-exit 0

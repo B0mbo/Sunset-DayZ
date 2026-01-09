@@ -31,6 +31,7 @@ services:
       MYSQL_USER: vpnadmin_user
       MYSQL_PASSWORD: vpnadmin_pass
     volumes:
+      - ./old_server:/old_server
       - ./databases/mariadb:/var/lib/mysql
       - ./logs/mysql/mysql.log:/var/log/mysql/mysql.log
       - ./logs/mysql/mysql_slow.log:/var/log/mysql/mysql_slow.log
