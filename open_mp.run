@@ -1,0 +1,88 @@
+# 0. install: docker, git
+
+# 1. clone open.mp project
+git clone --recursive https://github.com/openmultiplayer/open.mp
+
+cd open.mp/docker
+./build.sh
+
+# 2. update run Dockerfile
+vim run_ubuntu-22.04/Dockerfile
+
+RUN apt-get install -fyqq \
+    libatomic1:i386 \
+    openssl:i386 \
+    libmysqlclient-dev:i386 \
+    libcurl4-openssl-dev:i386
+
+# 3. get open.mp server
+mkdir data
+cd data
+wget https://github.com/openmultiplayer/open.mp/releases/download/v1.5.8.3079/open.mp-linux-x86.tar.gz
+tar xzvf open.mp-linux-x86.tar.gz
+mv Server/* .
+
+cd ..
+./run.sh
+cd ../../..
+
+# 4. clone samp server && copy data into open.mp
+git clone -b open.mp --single-branch https://github.com/B0mbo/Sunset-DayZ
+cd Sunset-DayZ
+mkdir -p ../open.mp/docker/data
+cp -r docker/old_server/server_data/DayZ_037/imessage ../open.mp/docker/data
+cp -r docker/old_server/server_data/DayZ_037/scriptfiles ../open.mp/docker/data
+cp -r docker/old_server/server_data/DayZ_037/plugins ../open.mp/docker/data
+
+# 5. build samp server
+cd pawno
+./pawncc DayZ+.pwn -S8192
+mkdir -p ../../open.mp/docker/data/gamemodes
+cp DayZ+.amx ../../open.mp/docker/data/gamemodes
+ls -lah DayZ+.amx
+
+# 6. init mysql database
+cd ../docker
+docker compose up -d mariadb
+#Create database:
+#$ docker exec -it $(docker ps | grep "0.0.0.0:3306" | awk -F " " '{print $1}') bash
+## mysql -h 127.0.0.1 -u root -p
+#input password: 'RootPasswd'
+#run into MySQL command line:
+#> create database dayz_old;
+#> GRANT ALL PRIVILEGES ON dayz_old.* TO 'user'@'%' IDENTIFIED BY 'passwd';
+#> QUIT
+#cd /old_server
+#./reload_db.sh
+# input password 'passwd'
+# Ctrl+D
+
+# 7. 
+cd ../..
+#init config open.mp/docker/data/config.json
+    ...
+    "max_bots": 1,
+    "max_players": 101,
+    ...
+        "legacy_plugins": [
+	    "MapAndreas.so",
+	    "crashdetect.so",
+	    "mysql_static.so",
+	    "streamer.so",
+	    "things.so",
+	    "translator.so"
+	    ],
+        "main_scripts": [
+            "DayZ+ 1"
+        ],
+
+# 8. build & run server
+# restart docker
+cd open.mp/docker
+./run.sh
+
+# 9. to stop the server:
+docker stop $(docker ps|grep "open\.mp"|awk -F " " {'print $1'})
+
+#10. don't forget to change the server rcon password!
+
